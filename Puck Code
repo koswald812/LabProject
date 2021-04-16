@@ -1,1 +1,39 @@
+// when button is pressed
+setWatch(function() {
+    // set the accel updater
+    var d = Puck.analogRead(D28);
+    var c = 0;
+    var i = 0;
+    Bluetooth.println(`${JSON.stringify({V0: d, color: c})}`);
+      
+    Puck.digitalWrite(D29,'High');
+    Puck.digitalWrite(D30,'Low');
 
+    // turn on the accelerometer and LED
+    LED1.write(true);
+
+    // in 20 seconds, stop reading data, turn off the LED.
+     while (i >= 0) {    
+        setTimeout(function() {
+            Puck.digitalWrite(D29,'Low');
+            Puck.digitalWrite(D30,'High');
+            c = 1;
+        }, 10);
+        
+        setTimeout(function() {
+            Puck.digitalWrite(D29,'High');
+            Puck.digitalWrite(D30,'Low');
+            c = 0;
+        }, 10);
+
+        i = i + 1;
+
+        setTimeout(function() {
+            Puck.digitalWrite(D0,'Low');
+            Puck.digitalWrite(D1,'Low');
+            LED1.write(false);
+            i = -1;
+        }, 10000);
+    }
+   
+  }, BTN, {edge: "rising", debounce:50, repeat:true});
