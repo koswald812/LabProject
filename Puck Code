@@ -1,14 +1,14 @@
 // when button is pressed
 setWatch(function() {
     // set the accel updater
-    var d = analogRead(D28);
+    var d = [];
     var c = 0;
     var i = 0;
     var begin = Date.now();
     var again = begin + 8000;
     var t0 = begin;
     var j = 0;
-    var color = 0;
+    var color = [];
       
     digitalWrite(D29,true);
     digitalWrite(D30,false);
@@ -18,7 +18,7 @@ setWatch(function() {
     
     // in 20 seconds, stop reading data, turn off the LED.
     while (i >= 0) {    
-        if (Date.now() - begin >= 50) {
+        if (Date.now() - begin >= 150) {
             digitalWrite(D29,false);
             digitalWrite(D30,true);
             c = 1;
@@ -26,7 +26,7 @@ setWatch(function() {
             begin = Date.now() + 8000;
         }
         
-        if (Date.now() - again >= 50) {
+        if (Date.now() - again >= 150) {
             digitalWrite(D29,true);
             digitalWrite(D30,false);
             c = 0;
@@ -35,13 +35,13 @@ setWatch(function() {
             again = Date.now() + 8000;
         }
 
-        if (Date.now() - t0 >= 5) {
+        if (Date.now() - t0 >= 30) {
             d.push(analogRead(D28));
             color.push(c);
             t0 = Date.now();
         }
               
-        if (i >= 100) {
+        if (i >= 40) {
           digitalWrite(D29,false);
           digitalWrite(D30,false);
           i = -1;
