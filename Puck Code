@@ -1,39 +1,54 @@
 // when button is pressed
 setWatch(function() {
     // set the accel updater
-    var d = Puck.analogRead(D28);
+    var d = analogRead(D28);
     var c = 0;
     var i = 0;
-    Bluetooth.println(`${JSON.stringify({V0: d, color: c})}`);
+    var begin = Date.now();
+    var again = begin + 8000;
+    var t0 = begin;
+    var j = 0;
+    var color = 0;
       
-    Puck.digitalWrite(D29,'High');
-    Puck.digitalWrite(D30,'Low');
+    digitalWrite(D29,true);
+    digitalWrite(D30,false);
 
     // turn on the accelerometer and LED
     LED1.write(true);
-
+    
     // in 20 seconds, stop reading data, turn off the LED.
-     while (i >= 0) {    
-        setTimeout(function() {
-            Puck.digitalWrite(D29,'Low');
-            Puck.digitalWrite(D30,'High');
+    while (i >= 0) {    
+        if (Date.now() - begin >= 50) {
+            digitalWrite(D29,false);
+            digitalWrite(D30,true);
             c = 1;
-        }, 10);
+            again = Date.now();
+            begin = Date.now() + 8000;
+        }
         
-        setTimeout(function() {
-            Puck.digitalWrite(D29,'High');
-            Puck.digitalWrite(D30,'Low');
+        if (Date.now() - again >= 50) {
+            digitalWrite(D29,true);
+            digitalWrite(D30,false);
             c = 0;
-        }, 10);
+            i = i + 1;
+            begin = Date.now();
+            again = Date.now() + 8000;
+        }
 
-        i = i + 1;
-
-        setTimeout(function() {
-            Puck.digitalWrite(D0,'Low');
-            Puck.digitalWrite(D1,'Low');
-            LED1.write(false);
-            i = -1;
-        }, 10000);
+        if (Date.now() - t0 >= 5) {
+            d.push(analogRead(D28));
+            color.push(c);
+            t0 = Date.now();
+        }
+              
+        if (i >= 100) {
+          digitalWrite(D29,false);
+          digitalWrite(D30,false);
+          i = -1;
+          LED1.write(false);
+        }
     }
-   
-  }, BTN, {edge: "rising", debounce:50, repeat:true});
+
+    Bluetooth.println(`${JSON.stringify({V0: d, led: color})}`);
+  
+}, BTN, {edge: "rising", debounce:50, repeat:false});
