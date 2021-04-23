@@ -1,1 +1,174 @@
+<html>
 
+  <head>
+    <button type="button" id="myPuck_connect"> Connect Puck via Bluetooth
+    </button>
+    <h2 id="blue_light_abs">Blue Light Absorbance: </h2>
+    <h2 id="red_light_abs">Red Light Absorbance: </h2>
+    <h2 id="jaundice">Jaundice Detected? </h2>
+    <script src="https://www.puck-js.com/puck.js"></script>
+    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
+    <script type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.js"></script>
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.css" />
+  </head>
+
+  <body>
+    <div id="div_g1" style="width:1200px; height:600px;"></div>
+    <div id="div_g2" style="width:1200px; height:600px;"></div>
+    <script type="text/javascript">
+    $(document).ready(function () {
+      var RedAbsData = []; // create Data variable to be graphed
+      var BlueAbsData = []; // create Data variable to be graphed
+      var connection;
+      var xconnect = document.getElementById("myPuck_connect")
+      RedAbsData.push([0, 1000.000]);
+      BlueAbsData.push([0, 1000.000]);
+      var g1 = new Dygraph(document.getElementById("div_g1"), RedAbsData, // create graph
+        {
+          drawPoints: true,
+          showRoller: true,
+          digitsAfterDecimal: 3,
+          dateWindow: [0, 13], // puck records for 10 seconds - establish x axis of 0 to 20
+          labels: ['Time', 'Red Absorbance'], // establish axis labels
+          showRangeSelector: true
+        });
+      var g2 = new Dygraph(document.getElementById("div_g2"), BlueAbsData, // create graph
+        {
+          drawPoints: true,
+          showRoller: true,
+          digitsAfterDecimal: 3,
+          dateWindow: [0, 13], // puck records for 10 seconds - establish x axis of 0 to 20
+          labels: ['Time', 'Blue Absorbance'], // establish axis labels
+          showRangeSelector: true
+        });
+
+      function onLine(v) {
+        
+        // get data from puck
+        v = JSON.parse(v);
+
+        // z direction is from flat face - take only data from linear acceleration in z direction
+        var V0 = v['V0'];
+        console.log(V0);
+        
+        // creating the moving avg filter
+        var yfilter = []; // establish variable to hold filtered data
+        var lowcutoff = Math.floor(yvalues.length*0.15); // cut out first 15% of data points - often noisy
+        var highcutoff = Math.floor(yvalues.length*0.95); // cut out last 5% of data points - often noisy
+        var windowSize = 30; // establish moving avg filter with n = 30
+
+        // loop through data that wasn't cut out
+        for (var start = lowcutoff; start < highcutoff - windowSize; start++) {
+          var sum = 0;
+
+          // loop through each data point and the next n samples to apply filter
+          for (var i = start; i < start + windowSize; i++) {
+            sum += yvalues[i];
+          }
+          yfilter.push(sum / windowSize); // add the mean of the n data points to yfilter
+        }
+
+        var norm = Array(yfilter.length); // array to store new values after subtracting regional means
+        var time = Array(yfilter.length); // array to store the times
+        var t0 = 0; // time ticker variable
+
+        // loop through each filtered point to create the norm and time vectors.
+        // the norm vector is the filtered values minus the regional means.
+        // the means are subtracted to center the plot around 0 as there is often a randomized offset.
+        // regional rather than global means are used to further center the plot around 0
+        // as there is often a constant change to the offset, sloping the overall plot.
+        for (var i = 0; i < yfilter.length; i++) {
+          var meanRange = Math.ceil(.1 * yfilter.length); // take nearest 20% of data points for regional means
+          var bottom = i - meanRange;
+          var top = i + meanRange;
+          if (bottom < 0) {
+            bottom = 0; // do not want negative indices as those would not be regional
+          }
+          if (top > yfilter.length - 1) {
+            top = yfilter.length - 1; // cannot have indices exceeding array length
+          }
+          mean = nj.array(yfilter.slice(bottom, top)).mean(); // slice nearest 20% of data points and take mean
+          norm[i] = yfilter[i] - mean; // subtract regional means
+          time[i] = t0; // set current time to time ticker value
+          
+          // time between samples = 20 seconds of samples / number of samples gotten
+          t0 = t0 + (20/yvalues.length); // update time ticker value
+        }
+
+        var periods = []; // array to store each breath period
+        var crossTimes = []; // array to store the times the plot crosses from pos to neg
+        var lastBreath = 0; // variable to store the last time the graph crossed from pos to neg
+
+        // loop through each normalized data point
+        for (var i = 1; i < norm.length; i++) {
+          
+          // find when the graph crosses from pos to neg (completion of a full breath)
+          if (norm[i] < 0 && norm[i - 1] > 0) {
+            var breathLength = time[i] - lastBreath; // store time between last crossing point and now
+            
+            // eliminate times that are too short (less than half a second) 
+            // to eliminate any noise where the plot crosses 0 at incorrect times.
+            if (breathLength > .5) {
+              crossTimes.push(time[i]); 
+              periods.push(breathLength);
+              lastBreath = time[i];
+            }
+          }
+        }
+
+        // calculate breathing rate
+        var avgPeriod = nj.array(periods).mean(); // take mean breath duration
+        var rate = 1 / avgPeriod;  // take inverse of mean breath duration for the rate
+
+        // update graph and breathing rate every 30 data points
+        if ((yfilter.length%30) === 0) {
+          
+          // update breathing rate text box
+          var rateText = document.getElementById("rate_text");
+          rateText.innerText = "Breathing Rate (per second): " + Math.round(100*rate) / 100;
+
+          // push all data to the Data array.
+          Data = [];
+          for (var i = 0; i < time.length; i++) {
+            Data.push([time[i], norm[i]]);
+          }
+          g.updateOptions( { 'file': Data } );
+        }
+      }
+
+      function bluetooth_connect() {
+        Puck.connect(function (c) {
+          if (!c) {
+            alert("Couldn't connect!");
+            return;
+          }
+          connection = c;
+          
+          // Handle the data we get back, and call 'onLine' whenever we get a line
+          var buf = "";
+          connection.on("data", function (d) {
+            buf += d;
+            var i = buf.indexOf("\n");
+            while (i >= 0) {
+              onLine(buf.substr(0, i));
+              buf = buf.substr(i + 1);
+              i = buf.indexOf("\n");
+            }
+          });
+          xconnect.textContent = "Disconnect Puck via Bluetooth";
+
+          // Setup data collection and graphing
+          Data.splice(0, Data.length);
+          g.updateOptions({ dateWindow: [0, 21] });
+        });
+      }
+      xconnect.addEventListener("click", function () { bluetooth_connect() });
+    });
+
+  </script>
+  </body>
+
+</html>
