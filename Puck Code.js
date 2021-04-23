@@ -36,7 +36,7 @@ setWatch(function() {
         }
 
         if (Date.now() - t0 >= 30) {
-            d.push(analogRead(D30));
+            d.push(analogRead(30));
             color.push(c);
             t0 = Date.now();
         }
