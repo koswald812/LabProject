@@ -51,4 +51,20 @@ setWatch(function() {
 
     Bluetooth.println(`${JSON.stringify({V0: d, led: color})}`);
   
+    var blue = [];
+    var green = [];
+    for (var i = 0; i < c.length; i++) {
+      if (c[i] === 0) {
+        blue.push(d[i]);
+      }
+      if (c[i] === 1) {
+        green.push(d[i]);
+      }
+    }
+  
+  var blue_intensity = blue.mean();
+  var green_intensity = green.mean();
+  
+  Bluetooth.println(`${JSON.stringify({Blue: blue_intensity, Green: green_intensity})}`);
+  
 }, BTN, {edge: "rising", debounce:50, repeat:false});
