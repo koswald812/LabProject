@@ -48,11 +48,20 @@
       function onLine(v) {
         
         // get data from puck
-        var V0 = parseFloat(v);
+        v = JSON.parse(v);
+        console.log(v);
 
         // z direction is from flat face - take only data from linear acceleration in z direction
-        
+        var yvalues = [];
+        var cvalues = [];
+        var V0 = parseFloat(v['V0']);
         console.log(V0);
+        var led = parseFloat(v['led']);
+        console.log(led);
+        yvalues.push(V0); // add newest z acceleration of yvalues vector
+        console.log(yvalues);
+        cvalues.push(led);
+        console.log(cvalues);
         
         // creating the moving avg filter
         var yfilter = []; // establish variable to hold filtered data
