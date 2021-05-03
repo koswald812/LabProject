@@ -16,33 +16,20 @@
   </head>
 
   <body>
-    <div id="div_g1" style="width:1200px; height:600px;"></div>
-    <div id="div_g2" style="width:1200px; height:600px;"></div>
+    <div id="div_g" style="width:1200px; height:600px;"></div>
     <script type="text/javascript">
     $(document).ready(function () {
-      var Data = [];
-      var RedAbsData = []; // create Data variable to be graphed
-      var BlueAbsData = []; // create Data variable to be graphed
+      var Data = []; // create Data variable to be graphed
       var connection;
       var xconnect = document.getElementById("myPuck_connect")
-      RedAbsData.push([0, 1000.000]);
-      BlueAbsData.push([0, 1000.000]);
-      var g = new Dygraph(document.getElementById("div_g1"), RedAbsData, // create graph
+      Data.push([0, 1000.000]);
+      var g = new Dygraph(document.getElementById("div_g"), Data, // create graph
         {
           drawPoints: true,
           showRoller: true,
           digitsAfterDecimal: 3,
-          dateWindow: [0, 13], // puck records for 10 seconds - establish x axis of 0 to 20
-          labels: ['Time', 'Red Absorbance'], // establish axis labels
-          showRangeSelector: true
-        });
-      var g2 = new Dygraph(document.getElementById("div_g2"), BlueAbsData, // create graph
-        {
-          drawPoints: true,
-          showRoller: true,
-          digitsAfterDecimal: 3,
-          dateWindow: [0, 13], // puck records for 10 seconds - establish x axis of 0 to 20
-          labels: ['Time', 'Blue Absorbance'], // establish axis labels
+          dateWindow: [0, 21], // puck records for 20 seconds - establish x axis of 0 to 20
+          labels: ['Time', 'z-acceleration'], // establish axis labels
           showRangeSelector: true
         });
 
