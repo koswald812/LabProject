@@ -59,7 +59,7 @@
         var green_lowcutoff = Math.floor(green.length*0.1); // cut out first 15% of data points - often noisy
         var green_highcutoff = Math.floor(green.length*0.9);
         var blue_filtered = blue.slice(blue_lowcutoff, blue_highcutoff + 1);
-        var blue_filtered = blue.slice(blue_lowcutoff, blue_highcutoff + 1);
+        var green_filtered = blue.slice(green_lowcutoff, green_highcutoff + 1);
         blue_avg = nj.array(blue_filtered).mean();
         green_avg = nj.array(green_filtered).mean();
         
