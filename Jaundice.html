@@ -3,9 +3,7 @@
   <head>
     <button type="button" id="myPuck_connect"> Connect Puck via Bluetooth
     </button>
-    <h2 id="blue_light_abs">Blue Light Absorbance: </h2>
-    <h2 id="red_light_abs">Red Light Absorbance: </h2>
-    <h2 id="jaundice">Jaundice Detected? </h2>
+    <h2 id="rate_text">Breathing Rate (per second): </h2>
     <script src="https://www.puck-js.com/puck.js"></script>
     <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
@@ -20,6 +18,7 @@
     <script type="text/javascript">
     $(document).ready(function () {
       var Data = []; // create Data variable to be graphed
+      var yvalues = []; // create yvalues variable to store acceleration values
       var connection;
       var xconnect = document.getElementById("myPuck_connect")
       Data.push([0, 1000.000]);
@@ -37,19 +36,14 @@
         
         // get data from puck
         v = JSON.parse(v);
-        console.log(v);
 
         // z direction is from flat face - take only data from linear acceleration in z direction
-        var yvalues = [];
-        var cvalues = [];
-        var V0 = parseFloat(v['V0']);
-        console.log(V0);
-        var led = parseFloat(v['led']);
-        console.log(led);
-        yvalues.push(V0); // add newest z acceleration of yvalues vector
-        console.log(yvalues);
-        cvalues.push(led);
-        console.log(cvalues);
+        var y = parseFloat(v['V0']);
+        var c = parseFloat(v['led']);
+        console.log(v);
+        console.log(y);
+        console.log(c);
+        yvalues.push(y); // add newest z acceleration of yvalues vector
         
         // creating the moving avg filter
         var yfilter = []; // establish variable to hold filtered data
