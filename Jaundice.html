@@ -19,6 +19,8 @@
     $(document).ready(function () {
       var Data = []; // create Data variable to be graphed
       var yvalues = []; // create yvalues variable to store acceleration values
+      var blue = [];
+      var green = [];
       var connection;
       var xconnect = document.getElementById("myPuck_connect")
       Data.push([0, 1000.000]);
@@ -38,8 +40,6 @@
         v = JSON.parse(v);
 
         // z direction is from flat face - take only data from linear acceleration in z direction
-        var blue = [];
-        var green = [];
         var y = parseFloat(v['V0']);
         var c = parseFloat(v['led']);
         if (c === 1) {
@@ -48,8 +48,6 @@
         if (c === 0) {
           green.push(y);
         }
-        console.log(blue);
-        console.log(green);
         blue_intensity = nj.array(blue).mean();
         green_intensity = nj.array(green).mean();
         console.log(blue_intensity);
