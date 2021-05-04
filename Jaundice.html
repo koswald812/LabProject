@@ -48,8 +48,8 @@
         if (c === 0) {
           green.push(y);
         }
-        blue_intensity = blue.mean();
-        green_intensity = green.mean();
+        blue_intensity = nj.array(blue).mean();
+        green_intensity = nj.array(green).mean();
         console.log(blue_intensity);
         console.log(green_intensity);
 
