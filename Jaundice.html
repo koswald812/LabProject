@@ -3,7 +3,10 @@
   <head>
     <button type="button" id="myPuck_connect"> Connect Puck via Bluetooth
     </button>
-    <h2 id="rate_text">Breathing Rate (per second): </h2>
+    <h2 id="blue_text">Blue Light Absorbance: </h2>
+    <h2 id="green_text">Green Light Absorbance: </h2>
+    <h2 id="conc_text">Bilirubin Concentration (M): </h2>
+    <h2 id="jaund_text">Jaundice?: </h2>
     <script src="https://www.puck-js.com/puck.js"></script>
     <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
@@ -19,15 +22,15 @@
     $(document).ready(function () {
       var Data = []; // create Data variable to be graphed
       var yvalues = []; // create yvalues variable to store acceleration values
-      var blue = [];
-      var green = [];
-      var blue_int = .00238372;
-      var green_int = .00231189;
-      var e_blue = 4.5e4;
-      var e_green = 2.5e3;
+      var blue = []; // to store blue V0 values
+      var green = []; // to store green V0 values
+      var blue_int = .00238372; // blue LED intensity
+      var green_int = .00231189; // green LED intensity
+      var e_blue = 4.5e4; // absorptivity of bilirubin at blue wavelength
+      var e_green = 2.5e3; // absorptivity of bilirubin at green wavelength
       var l_blue = .0315;
-      var l_green = .694;
-      var jaundice_c = 4.276e-5; 
+      var l_green = .2432;
+      var jaundice_c = 4.276e-5; // minimum concentratiton of bilirubin for jaundice
       var connection;
       var xconnect = document.getElementById("myPuck_connect")
       Data.push([0, 1000.000]);
@@ -36,8 +39,8 @@
           drawPoints: true,
           showRoller: true,
           digitsAfterDecimal: 3,
-          dateWindow: [0, 21], // puck records for 20 seconds - establish x axis of 0 to 20
-          labels: ['Time', 'z-acceleration'], // establish axis labels
+          dateWindow: [0, 12], // puck records for 12 seconds - establish x axis of 0 to 12
+          labels: ['Time (s)', 'V0 (V)'], // establish axis labels
           showRangeSelector: true
         });
 
@@ -46,7 +49,7 @@
         // get data from puck
         v = JSON.parse(v);
 
-        // z direction is from flat face - take only data from linear acceleration in z direction
+        // data from puck has V0 value between 0 and 1 as well as color value (1 for blue, 0 for green)
         var y = parseFloat(v['V0']);
         var c = parseFloat(v['led']);
         if (c === 1) {
@@ -55,104 +58,57 @@
         if (c === 0) {
           green.push(y);
         }
-        var blue_lowcutoff = Math.floor(blue.length*0.1); // cut out first 15% of data points - often noisy
-        var blue_highcutoff = Math.floor(blue.length*0.9);
-        var green_lowcutoff = Math.floor(green.length*0.1); // cut out first 15% of data points - often noisy
-        var green_highcutoff = Math.floor(green.length*0.9);
+        var blue_lowcutoff = Math.floor(blue.length*0.1); // cut out first 10% of data points - often noisy
+        var blue_highcutoff = Math.floor(blue.length*0.9); // cut out last 10% of data points - often noisy
+        var green_lowcutoff = Math.floor(green.length*0.1); // cut out first 10% of data points - often noisy
+        var green_highcutoff = Math.floor(green.length*0.9); // cut out last 10% of data points - often noisy
         var blue_filtered = blue.slice(blue_lowcutoff, blue_highcutoff + 1);
         var green_filtered = blue.slice(green_lowcutoff, green_highcutoff + 1);
-        var blue_avg = nj.array(blue_filtered).mean();
-        var green_avg = nj.array(green_filtered).mean();
-        var blue_abs = Math.log10(blue_avg / blue_int);
-        var green_abs = Math.log10(green_avg / green_int);
-        console.log(blue_abs);
-        console.log(green_abs);
-        // blue_c = blue_abs / (e_blue * length);
-        // green_c = green_abs / (e_green * length);
-        // avg_c = (blue_c + green_c) / 2;
-
-        yvalues.push(y); // add newest z acceleration of yvalues vector
+        var blue_avg = nj.array(blue_filtered).mean(); // take average V0 value
+        var green_avg = nj.array(green_filtered).mean(); // take average V0 value
+        var blue_abs = Math.log10(blue_avg / blue_int); // calculate absorbance
+        var green_abs = Math.log10(green_avg / green_int); // calculate absorbance
+        var blue_c = blue_abs / (e_blue * length); // calculate concentration of bilirubin
+        var green_c = green_abs / (e_green * length); // calculate concentration of bilirubin
+        var avg_c = (blue_c + green_c) / 2; // take average between both LED's for more accurate result
         
-        // creating the moving avg filter
-        var yfilter = []; // establish variable to hold filtered data
-        var lowcutoff = Math.floor(yvalues.length*0.15); // cut out first 15% of data points - often noisy
-        var highcutoff = Math.floor(yvalues.length*0.95); // cut out last 5% of data points - often noisy
-        var windowSize = 30; // establish moving avg filter with n = 30
-
-        // loop through data that wasn't cut out
-        for (var start = lowcutoff; start < highcutoff - windowSize; start++) {
-          var sum = 0;
-
-          // loop through each data point and the next n samples to apply filter
-          for (var i = start; i < start + windowSize; i++) {
-            sum += yvalues[i];
-          }
-          yfilter.push(sum / windowSize); // add the mean of the n data points to yfilter
+        // determine if patient has jaundice (if concentration is at least 95% of jaundice concentration, then yes)
+        if (avg_c >= (.95 * jaundice_c)) {
+          var jaund = "Yes";
+        }
+        if (avg_c < (.95 * jaundice_c)) {
+          var jaund = "No";
         }
 
-        var norm = Array(yfilter.length); // array to store new values after subtracting regional means
-        var time = Array(yfilter.length); // array to store the times
-        var t0 = 0; // time ticker variable
-
-        // loop through each filtered point to create the norm and time vectors.
-        // the norm vector is the filtered values minus the regional means.
-        // the means are subtracted to center the plot around 0 as there is often a randomized offset.
-        // regional rather than global means are used to further center the plot around 0
-        // as there is often a constant change to the offset, sloping the overall plot.
-        for (var i = 0; i < yfilter.length; i++) {
-          var meanRange = Math.ceil(.1 * yfilter.length); // take nearest 20% of data points for regional means
-          var bottom = i - meanRange;
-          var top = i + meanRange;
-          if (bottom < 0) {
-            bottom = 0; // do not want negative indices as those would not be regional
-          }
-          if (top > yfilter.length - 1) {
-            top = yfilter.length - 1; // cannot have indices exceeding array length
-          }
-          mean = nj.array(yfilter.slice(bottom, top)).mean(); // slice nearest 20% of data points and take mean
-          norm[i] = yfilter[i] - mean; // subtract regional means
-          time[i] = t0; // set current time to time ticker value
+        // create y values to graph
+        yvalues.push(y); // add newest V0 to yvalues vector
+        var y_lowcutoff = Math.floor(yvalues.length*0.1); // cut out first 10% of data points - often noisy
+        var y_highcutoff = Math.floor(yvalues.length*0.9); // cut out last 10% of data points - often noisy
+        var y_filtered = yvalues.slice(y_lowcutoff, y_highcutoff + 1);
+        
+        // update graph every 30 data points
+        if ((y_filtered.length%30) === 0) {
           
-          // time between samples = 20 seconds of samples / number of samples gotten
-          t0 = t0 + (20/yvalues.length); // update time ticker value
-        }
-
-        var periods = []; // array to store each breath period
-        var crossTimes = []; // array to store the times the plot crosses from pos to neg
-        var lastBreath = 0; // variable to store the last time the graph crossed from pos to neg
-
-        // loop through each normalized data point
-        for (var i = 1; i < norm.length; i++) {
-          
-          // find when the graph crosses from pos to neg (completion of a full breath)
-          if (norm[i] < 0 && norm[i - 1] > 0) {
-            var breathLength = time[i] - lastBreath; // store time between last crossing point and now
-            
-            // eliminate times that are too short (less than half a second) 
-            // to eliminate any noise where the plot crosses 0 at incorrect times.
-            if (breathLength > .5) {
-              crossTimes.push(time[i]); 
-              periods.push(breathLength);
-              lastBreath = time[i];
-            }
-          }
-        }
-
-        // calculate breathing rate
-        var avgPeriod = nj.array(periods).mean(); // take mean breath duration
-        var rate = 1 / avgPeriod;  // take inverse of mean breath duration for the rate
-
-        // update graph and breathing rate every 30 data points
-        if ((yfilter.length%30) === 0) {
-          
-          // update breathing rate text box
-          var rateText = document.getElementById("rate_text");
-          rateText.innerText = "Breathing Rate (per second): " + Math.round(100*rate) / 100;
+          // update text boxs
+          var blueText = document.getElementById("blue_text");
+          blueText.innerText = "Blue Light Absorbance: " + blue_abs;
+          var greenText = document.getElementById("green_text");
+          greenText.innerText = "Green Light Absorbance: " + green_abs;
+          var concText = document.getElementById("conc_text");
+          concText.innerText = "Bilirubin Concentration (M): " + avg_c;
+          var jaundText = document.getElementById("jaund_text");
+          jaundText.innerText = "Jaundice? " + jaund;
 
           // push all data to the Data array.
           Data = [];
-          for (var i = 0; i < time.length; i++) {
-            Data.push([time[i], norm[i]]);
+          var time = Array(y_filtered.length); // to store time values
+          var t0 = 0; // time ticker variable
+          var true_y = Array(y_filtered.length); // to store true V0 values
+          for (var i = 0; i < y_filtered.length; i++) {
+            time[i] = t0;
+            t0 = t0 + (12 / yvalues.length); // 12 seconds for all samples - update time ticker by the period
+            true_y[i] = y_filtered[i] * 3.3; // a value of 1 represents a V0 of 3.3 V
+            Data.push([time[i], true_y[i]]); // push to data
           }
           g.updateOptions( { 'file': Data } );
         }
