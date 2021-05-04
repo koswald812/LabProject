@@ -68,8 +68,8 @@
         var green_avg = nj.array(green_filtered).mean(); // take average V0 value
         var blue_abs = Math.log10(blue_avg / blue_int); // calculate absorbance
         var green_abs = Math.log10(green_avg / green_int); // calculate absorbance
-        var blue_c = blue_abs / (e_blue * length); // calculate concentration of bilirubin
-        var green_c = green_abs / (e_green * length); // calculate concentration of bilirubin
+        var blue_c = blue_abs / (e_blue * l_blue); // calculate concentration of bilirubin
+        var green_c = green_abs / (e_green * l_green); // calculate concentration of bilirubin
         var avg_c = (blue_c + green_c) / 2; // take average between both LED's for more accurate result
         
         // determine if patient has jaundice (if concentration is at least 95% of jaundice concentration, then yes)
