@@ -21,6 +21,12 @@
       var yvalues = []; // create yvalues variable to store acceleration values
       var blue = [];
       var green = [];
+      var blue_int = .00238372;
+      var green_int = .00231189;
+      // var e_blue =
+      // var e_green =
+      // var length =
+      // var jaundice_c = 
       var connection;
       var xconnect = document.getElementById("myPuck_connect")
       Data.push([0, 1000.000]);
@@ -48,10 +54,22 @@
         if (c === 0) {
           green.push(y);
         }
-        blue_intensity = nj.array(blue).mean();
-        green_intensity = nj.array(green).mean();
-        console.log(blue_intensity);
-        console.log(green_intensity);
+        var blue_lowcutoff = Math.floor(blue.length*0.1); // cut out first 15% of data points - often noisy
+        var blue_highcutoff = Math.floor(blue.length*0.9);
+        var green_lowcutoff = Math.floor(green.length*0.1); // cut out first 15% of data points - often noisy
+        var green_highcutoff = Math.floor(green.length*0.9);
+        var blue_filtered = blue.slice(blue_lowcutoff, blue_highcutoff + 1);
+        var blue_filtered = blue.slice(blue_lowcutoff, blue_highcutoff + 1);
+        blue_avg = nj.array(blue_filtered).mean();
+        green_avg = nj.array(green_filtered).mean();
+        
+        blue_abs = Math.log10(blue_avg / blue_int);
+        green_abs = Math.log10(green_avg / green_int);
+        console.log(blue_abs);
+        console.log(green_abs);
+        // blue_c = blue_abs / (e_blue * length);
+        // green_c = green_abs / (e_green * length);
+        // avg_c = (blue_c + green_c) / 2;
 
         yvalues.push(y); // add newest z acceleration of yvalues vector
         
