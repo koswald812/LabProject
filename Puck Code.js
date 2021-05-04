@@ -3,6 +3,7 @@ setWatch(function() {
   var i = 0;
   var begin = Date.now();
   var again = begin + 8000;
+  var c = 0;
   digitalWrite(D29,true);
   digitalWrite(D28,false);
   LED1.write(true);
@@ -12,6 +13,7 @@ setWatch(function() {
         digitalWrite(D28,true);
         again = Date.now();
         begin = Date.now() + 8000;
+        c = 0;
     }
     if (Date.now() - again >= 150) {
         digitalWrite(D29,true);
@@ -19,6 +21,7 @@ setWatch(function() {
         i = i + 1;
         begin = Date.now();
         again = Date.now() + 8000;
+        c = 1;
     }
     if (i >= 40) {
       LED1.write(false);
@@ -26,13 +29,6 @@ setWatch(function() {
       digitalWrite(D28,false);
     }
     if (Date.now() - t0 >= 10) {
-      var c = 0;
-      if (digitalRead(D1)===1) {
-        c = 0;
-      }
-      if (digitalRead(D2)===1) {
-        c = 2;
-      }
       var d = analogRead(30);
       Bluetooth.println(`${JSON.stringify({V0: d, led: c})}`);
       t0 = Date.now();
