@@ -23,10 +23,11 @@
       var green = [];
       var blue_int = .00238372;
       var green_int = .00231189;
-      // var e_blue =
-      // var e_green =
-      // var length =
-      // var jaundice_c = 
+      var e_blue = 4.5e4;
+      var e_green = 2.5e3;
+      var l_blue = .0315;
+      var l_green = .694;
+      var jaundice_c = 4.276e-5; 
       var connection;
       var xconnect = document.getElementById("myPuck_connect")
       Data.push([0, 1000.000]);
@@ -60,11 +61,10 @@
         var green_highcutoff = Math.floor(green.length*0.9);
         var blue_filtered = blue.slice(blue_lowcutoff, blue_highcutoff + 1);
         var green_filtered = blue.slice(green_lowcutoff, green_highcutoff + 1);
-        blue_avg = nj.array(blue_filtered).mean();
-        green_avg = nj.array(green_filtered).mean();
-        
-        blue_abs = Math.log10(blue_avg / blue_int);
-        green_abs = Math.log10(green_avg / green_int);
+        var blue_avg = nj.array(blue_filtered).mean();
+        var green_avg = nj.array(green_filtered).mean();
+        var blue_abs = Math.log10(blue_avg / blue_int);
+        var green_abs = Math.log10(green_avg / green_int);
         console.log(blue_abs);
         console.log(green_abs);
         // blue_c = blue_abs / (e_blue * length);
